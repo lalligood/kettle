@@ -1,0 +1,6 @@
+kettle.properties
+shared.xml
+
+.venv/
+.vscode/
+downloads/
