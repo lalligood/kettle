@@ -17,7 +17,7 @@ import xmltodict
 default_path = "/Applications/data-integration"
 default_match = "STM"
 
-console = Console(style="bold white", width=80)
+console = Console(style="bold white")
 fail_style = "bold white on red"
 warn_style = "bold white on yellow"
 pass_style = "bold white on green"
@@ -32,9 +32,7 @@ def open_in_editor(filename: Path) -> None:
     """Open specified file in default text editor."""
     try:
         os.system(f"open {shlex.quote(str(filename))}")
-        console.print(
-            "Opening text editor in a separate window . . .", style=pass_style
-        )
+        console.print(f"Opening {filename} in your text editor . . .", style=pass_style)
     except FileNotFoundError:
         unable_to_locate(filename)
     sys.exit()
@@ -53,7 +51,7 @@ def show_contents(filename: Path) -> None:
 def validate_file(filename: Path) -> None:
     """Validate if the specified file exists."""
     if filename.exists():
-        console.print(f"FILE FOUND AT {filename}")
+        console.print(f"FILE FOUND AT {filename}", style=pass_style)
     else:
         unable_to_locate(filename)
     sys.exit()
@@ -104,6 +102,13 @@ def show_connection_details(filename: Path, db_name: str) -> None:
         "data_tablespace",
         "index_tablespace",
     )
+    table = Table(
+        "Element",
+        "Value",
+        show_header=True,
+        header_style="bold gray",
+        title=f"Database Connection Properties for {db_name}",
+    )
     connections = read_shared_xml(filename)
     for connection in connections:
         if connection.get("server").startswith("${"):
@@ -111,13 +116,13 @@ def show_connection_details(filename: Path, db_name: str) -> None:
                 "NAME", "PASSWORD"
             )
     details = [
-        f"{k}: {v}"
+        table.add_row(k, v)
         for connection in connections
         for k, v in connection.items()
         if db_name == connection["name"] and k not in hidden_keys
     ]
     if details:
-        console.print("\n".join(details))
+        console.print(table)
     else:
         fail_message(f"DATABASE CONNECTION {db_name} NOT FOUND IN {filename}!")
     sys.exit()
@@ -126,15 +131,18 @@ def show_connection_details(filename: Path, db_name: str) -> None:
 def show_kettle_matches(filename: Path, matching: str) -> None:
     """Display line(s) from kettle.properties that start with specified string."""
     try:
-        matches = [
-            line.strip().replace("=", ": ")
-            for line in open(filename, "r")
-            if line.startswith(matching)
-        ]
-        if matches:
-            console.print("\n".join(matches))
-        else:
-            fail_message(f"NO LINES STARTING WITH '{matching}' WERE FOUND!")
+        table = Table(
+            "Property Name",
+            "Property Value",
+            show_header=True,
+            header_style="bold gray",
+            title=f"Kettle Properties Containing {matching}",
+        )
+        for line in open(filename, "r"):
+            if line.startswith(matching):
+                property_name, property_value = line.strip("\n").split("=")
+                table.add_row(property_name, property_value)
+        console.print(table)
     except FileNotFoundError:
         unable_to_locate(filename)
 
@@ -210,7 +218,15 @@ def main(
     connection: str,
     show_shared_xml_path: bool,
 ) -> None:
-    """Utility to quickly access key PDI configuration files."""
+    """Utility to quickly view or make changes to the following PDI configuration files:
+
+    * kettle.properties
+
+    * spoon.sh
+
+    * shared.xml
+
+    Also, this script is currently designed only to be run on Mac OSX."""
     kettle = Path(kettle_path) / "kettle.properties"
     spoon_sh = Path(kettle_path) / "spoon.sh"
     shared_xml = Path(kettle_path) / "shared.xml"
@@ -233,7 +249,7 @@ def main(
     if connection:
         show_connection_details(shared_xml, connection)
     if show_shared_xml_path:
-        validate_file(spoon_sh)
+        validate_file(shared_xml)
 
     show_kettle_matches(kettle, match)
 
