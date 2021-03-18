@@ -14,7 +14,7 @@ import sys
 from typing import Dict, List
 import xmltodict
 
-default_path = "/Applications/data-integration"
+default_path = Path("/Applications/data-integration")
 default_match = "STM"
 
 console = Console(style="bold white")
@@ -166,14 +166,10 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
     help="Open kettle.properties in associated file type text editor",
 )
 @click.option(
-    "--show",
-    is_flag=True,
-    help="Display all contents of kettle.properties file",
+    "--show", is_flag=True, help="Display all contents of kettle.properties file",
 )
 @click.option(
-    "--show-path",
-    is_flag=True,
-    help="Display path to kettle.properties file",
+    "--show-path", is_flag=True, help="Display path to kettle.properties file",
 )
 @click.option(
     "--edit-spoon",
@@ -181,14 +177,10 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
     help="Open spoon.sh in associated file type text editor",
 )
 @click.option(
-    "--show-spoon",
-    is_flag=True,
-    help="Display all contents of spoon.sh file",
+    "--show-spoon", is_flag=True, help="Display all contents of spoon.sh file",
 )
 @click.option(
-    "--show-spoon-path",
-    is_flag=True,
-    help="Display path to spoon.sh file",
+    "--show-spoon-path", is_flag=True, help="Display path to spoon.sh file",
 )
 @click.option(
     "--list-connections",
@@ -201,9 +193,7 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
     help="Display specified database connection details in shared.xml",
 )
 @click.option(
-    "--show-shared-xml-path",
-    is_flag=True,
-    help="Display path to shared.xml file",
+    "--show-shared-xml-path", is_flag=True, help="Display path to shared.xml file",
 )
 def main(
     kettle_path: Path,
@@ -227,9 +217,9 @@ def main(
     * shared.xml
 
     Also, this script is currently designed only to be run on Mac OSX."""
-    kettle = Path(kettle_path) / "kettle.properties"
-    spoon_sh = Path(kettle_path) / "spoon.sh"
-    shared_xml = Path(kettle_path) / "shared.xml"
+    kettle = kettle_path / "kettle.properties"
+    spoon_sh = kettle_path / "spoon.sh"
+    shared_xml = kettle_path / "shared.xml"
     if edit:
         open_in_editor(kettle)
     if show:
@@ -256,3 +246,38 @@ def main(
 
 if __name__ == "__main__":
     main()
+else:
+    from pytest import mark, raises
+
+
+def test_unable_to_locate(capsys):
+    """Make sure that message is printed when path to config file(s) is invalid."""
+    test_path = "/foo/bar/kettle.properties"
+    result = unable_to_locate(test_path)
+    captured = capsys.readouterr()
+    assert result is None
+    assert test_path in captured.out
+    assert captured.out.startswith("UNABLE TO LOCATE")
+
+
+@mark.skip(reason="NOTE: This test will cause kettle.properties to be opened!")
+def test_open_in_editor(capsys):
+    """Make sure that text editor window opens when called.
+
+    NOTE: This test will cause kettle.properties to be opened!"""
+    test_path = default_path / "kettle.properties"
+    with raises(SystemExit):
+        result = open_in_editor(test_path)
+        captured = capsys.readouterr()
+        assert result is None
+        assert test_path in captured.out
+        assert test_path.startswith("Opening")
+
+
+def test_open_in_editor_fails(capsys):
+    """Make sure that text editor window opens when called."""
+    test_path = Path("/foo/bar") / "kettle.badfile"
+    with raises(SystemExit):
+        open_in_editor(test_path)
+        captured = capsys.readouterr()
+        assert captured.out.startswith("UNABLE TO LOCATE")
