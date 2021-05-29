@@ -185,16 +185,21 @@ def kettle(
     ),
     edit: bool = typer.Option(
         False,
+        "--edit",
         is_flag=True,
         help="Open kettle.properties in associated file type text editor",
     ),
     show: bool = typer.Option(
         False,
+        "--show",
         is_flag=True,
         help="Display contents of kettle.properties file",
     ),
     show_path: bool = typer.Option(
-        False, is_flag=True, help="Display path to kettle.properties file"
+        False,
+        "--show-path",
+        is_flag=True,
+        help="Display path to kettle.properties file",
     ),
 ):
     kettle = filepath / "kettle.properties"
@@ -217,16 +222,21 @@ def spoon(
     ),
     edit: bool = typer.Option(
         False,
+        "--edit",
         is_flag=True,
         help="Open kettle.properties in associated file type text editor",
     ),
     show: bool = typer.Option(
         False,
+        "--show",
         is_flag=True,
         help="Display contents of kettle.properties file",
     ),
     show_path: bool = typer.Option(
-        False, is_flag=True, help="Display path to kettle.properties file"
+        False,
+        "--show-path",
+        is_flag=True,
+        help="Display path to kettle.properties file",
     ),
 ):
     spoon_sh = filepath / "spoon.sh"
@@ -249,6 +259,7 @@ def shared(
     ),
     list_connections: bool = typer.Option(
         False,
+        "--list-connections",
         is_flag=True,
         help="Display list of all database connection names in shared.xml",
     ),
@@ -259,6 +270,7 @@ def shared(
     ),
     show_path: bool = typer.Option(
         False,
+        "--show-path",
         is_flag=True,
         help="Display path to shared.xml file",
     ),
@@ -276,7 +288,11 @@ def shared(
 if __name__ == "__main__":
     cli()
 else:
+    from typer.testing import CliRunner
     from pytest import mark, raises
+
+
+runner = CliRunner()
 
 
 def test_unable_to_locate(capsys):
