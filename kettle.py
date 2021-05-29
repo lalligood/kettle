@@ -3,15 +3,27 @@
 """See main() docstring for summary description of this script. (So that
 information will display when running with '--help' option.)"""
 
-import click
 import os
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 import shlex
 import sys
-from typing import Dict, List
+import typer
+from typing import Dict, List, Optional
 import xmltodict
+
+usage = """Utility to quickly view or make changes to the following PDI
+configuration files:
+
+* kettle.properties
+
+* spoon.sh
+
+* shared.xml
+
+This script is designed only to be run on Mac OSX or Linux."""
+cli = typer.Typer(name="pdi_config", add_completion=False, help=usage)
 
 default_path = (
     Path("/Applications/data-integration")  # default path for Mac
@@ -23,7 +35,8 @@ default_match = "STM"
 console = Console(style="bold white")
 fail_style = "bold white on red"
 warn_style = "bold white on yellow"
-pass_style = "bold white on green"  # nosec
+gain_style = "bold white on green"
+show_style = "bold purple"
 
 
 def unable_to_locate(filename: Path) -> None:
@@ -34,8 +47,12 @@ def unable_to_locate(filename: Path) -> None:
 def open_in_editor(filename: Path) -> None:
     """Open specified file in default text editor."""
     try:
-        os.system(f"open {shlex.quote(str(filename))}")  # nosec
-        console.print(f"Opening {filename} in your text editor . . .", style=pass_style)
+        if sys.platform == "darwin":
+            os.system(f"open {shlex.quote(str(filename))}")  # nosec
+        else:
+            # open file in Linux editor
+            pass
+        console.print(f"Opening {filename} in your text editor . . .", style=gain_style)
     except FileNotFoundError:
         unable_to_locate(filename)
     sys.exit()
@@ -54,7 +71,7 @@ def show_contents(filename: Path) -> None:
 def validate_file(filename: Path) -> None:
     """Validate if the specified file exists."""
     if filename.exists():
-        console.print(f"FILE FOUND AT {filename}", style=pass_style)
+        console.print(f"FILE FOUND AT {filename}", style=gain_style)
     else:
         unable_to_locate(filename)
     sys.exit()
@@ -83,8 +100,9 @@ def show_all_connections(filename: Path) -> None:
         table = Table(
             "Connection Name",
             show_header=True,
-            header_style="bold gray",
+            header_style=show_style,
             title="Database Connections",
+            min_width=40,
         )
         for connection in connections:
             for k, v in connection.items():
@@ -109,8 +127,9 @@ def show_connection_details(filename: Path, db_name: str) -> None:
         "Element",
         "Value",
         show_header=True,
-        header_style="bold gray",
+        header_style=show_style,
         title=f"Database Connection Properties for {db_name}",
+        min_width=40,
     )
     connections = read_shared_xml(filename)
     for connection in connections:
@@ -138,8 +157,9 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
             "Property Name",
             "Property Value",
             show_header=True,
-            header_style="bold gray",
+            header_style=show_style,
             title=f"Kettle Properties Containing {matching}",
+            min_width=40,
         )
         for line in open(filename, "r"):
             if line.startswith(matching):
@@ -150,116 +170,111 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
         unable_to_locate(filename)
 
 
-@click.command()
-@click.option(
-    "--kettle-path",
-    default=default_path,
-    show_default=True,
-    help="Path to your kettle.properties file",
-)
-@click.option(
-    "--match",
-    default=default_match,
-    show_default=True,
-    help="String to search from beginning of line for",
-)
-@click.option(
-    "--edit",
-    is_flag=True,
-    help="Open kettle.properties in associated file type text editor",
-)
-@click.option(
-    "--show",
-    is_flag=True,
-    help="Display all contents of kettle.properties file",
-)
-@click.option(
-    "--show-path",
-    is_flag=True,
-    help="Display path to kettle.properties file",
-)
-@click.option(
-    "--edit-spoon",
-    is_flag=True,
-    help="Open spoon.sh in associated file type text editor",
-)
-@click.option(
-    "--show-spoon",
-    is_flag=True,
-    help="Display all contents of spoon.sh file",
-)
-@click.option(
-    "--show-spoon-path",
-    is_flag=True,
-    help="Display path to spoon.sh file",
-)
-@click.option(
-    "--list-connections",
-    is_flag=True,
-    help="Display list of all database connection names in shared.xml",
-)
-@click.option(
-    "--connection",
-    show_default=True,
-    help="Display specified database connection details in shared.xml",
-)
-@click.option(
-    "--show-shared-xml-path",
-    is_flag=True,
-    help="Display path to shared.xml file",
-)
-def main(
-    kettle_path: Path,
-    match: str,
-    edit: bool,
-    show: bool,
-    show_path: bool,
-    edit_spoon: bool,
-    show_spoon: bool,
-    show_spoon_path: bool,
-    list_connections: bool,
-    connection: str,
-    show_shared_xml_path: bool,
-) -> None:
-    """Utility to quickly view or make changes to the following PDI configuration
-    files:
-
-    * kettle.properties
-
-    * spoon.sh
-
-    * shared.xml
-
-    Also, this script is currently designed only to be run on Mac OSX."""
-    kettle = kettle_path / "kettle.properties"
-    spoon_sh = kettle_path / "spoon.sh"
-    shared_xml = kettle_path / "shared.xml"
+@cli.command()
+def kettle(
+    filepath: Optional[Path] = typer.Option(
+        default_path,
+        "--path",
+        show_default=True,
+        help="Path to your kettle.properties file",
+    ),
+    match: str = typer.Option(
+        default_match,
+        show_default=True,
+        help="String to search from beginning of line for",
+    ),
+    edit: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Open kettle.properties in associated file type text editor",
+    ),
+    show: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Display contents of kettle.properties file",
+    ),
+    show_path: bool = typer.Option(
+        False, is_flag=True, help="Display path to kettle.properties file"
+    ),
+):
+    kettle = filepath / "kettle.properties"
     if edit:
         open_in_editor(kettle)
     if show:
         show_contents(kettle)
     if show_path:
         validate_file(kettle)
+    show_kettle_matches(kettle, match)
 
-    if edit_spoon:
+
+@cli.command()
+def spoon(
+    filepath: Optional[Path] = typer.Option(
+        default_path,
+        "--path",
+        show_default=True,
+        help="Path to your spoon.sh file",
+    ),
+    edit: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Open kettle.properties in associated file type text editor",
+    ),
+    show: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Display contents of kettle.properties file",
+    ),
+    show_path: bool = typer.Option(
+        False, is_flag=True, help="Display path to kettle.properties file"
+    ),
+):
+    spoon_sh = filepath / "spoon.sh"
+    if edit:
         open_in_editor(spoon_sh)
-    if show_spoon:
+    if show:
         show_contents(spoon_sh)
-    if show_spoon_path:
+    if show_path:
         validate_file(spoon_sh)
+    print("Nothing to do. Exiting. . .")
 
+
+@cli.command()
+def shared(
+    filepath: Optional[Path] = typer.Option(
+        default_path,
+        "--path",
+        show_default=True,
+        help="Path to your shared.xml file",
+    ),
+    list_connections: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Display list of all database connection names in shared.xml",
+    ),
+    connection: Optional[str] = typer.Option(
+        "",
+        show_default=False,
+        help="Display specified database connection details in shared.xml",
+    ),
+    show_path: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Display path to shared.xml file",
+    ),
+):
+    shared_xml = filepath / "shared.xml"
     if list_connections:
         show_all_connections(shared_xml)
     if connection:
         show_connection_details(shared_xml, connection)
-    if show_shared_xml_path:
+    if show_path:
         validate_file(shared_xml)
-
-    show_kettle_matches(kettle, match)
+    print("Nothing to do. Exiting. . .")
 
 
 if __name__ == "__main__":
-    main()
+    cli()
 else:
     from pytest import mark, raises
 
