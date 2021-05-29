@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-"""See main() docstring for summary description of this script. (So that information will
-display when running with '--help' option.)
-"""
+"""See main() docstring for summary description of this script. (So that
+information will display when running with '--help' option.)"""
 
 import click
 import os
@@ -14,13 +13,17 @@ import sys
 from typing import Dict, List
 import xmltodict
 
-default_path = Path("/Applications/data-integration")
+default_path = (
+    Path("/Applications/data-integration")  # default path for Mac
+    if sys.platform == "darwin"
+    else Path.home() / "data-integration"  # default path for Linux
+)
 default_match = "STM"
 
 console = Console(style="bold white")
 fail_style = "bold white on red"
 warn_style = "bold white on yellow"
-pass_style = "bold white on green"
+pass_style = "bold white on green"  # nosec
 
 
 def unable_to_locate(filename: Path) -> None:
@@ -31,7 +34,7 @@ def unable_to_locate(filename: Path) -> None:
 def open_in_editor(filename: Path) -> None:
     """Open specified file in default text editor."""
     try:
-        os.system(f"open {shlex.quote(str(filename))}")
+        os.system(f"open {shlex.quote(str(filename))}")  # nosec
         console.print(f"Opening {filename} in your text editor . . .", style=pass_style)
     except FileNotFoundError:
         unable_to_locate(filename)
@@ -166,10 +169,14 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
     help="Open kettle.properties in associated file type text editor",
 )
 @click.option(
-    "--show", is_flag=True, help="Display all contents of kettle.properties file",
+    "--show",
+    is_flag=True,
+    help="Display all contents of kettle.properties file",
 )
 @click.option(
-    "--show-path", is_flag=True, help="Display path to kettle.properties file",
+    "--show-path",
+    is_flag=True,
+    help="Display path to kettle.properties file",
 )
 @click.option(
     "--edit-spoon",
@@ -177,10 +184,14 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
     help="Open spoon.sh in associated file type text editor",
 )
 @click.option(
-    "--show-spoon", is_flag=True, help="Display all contents of spoon.sh file",
+    "--show-spoon",
+    is_flag=True,
+    help="Display all contents of spoon.sh file",
 )
 @click.option(
-    "--show-spoon-path", is_flag=True, help="Display path to spoon.sh file",
+    "--show-spoon-path",
+    is_flag=True,
+    help="Display path to spoon.sh file",
 )
 @click.option(
     "--list-connections",
@@ -193,7 +204,9 @@ def show_kettle_matches(filename: Path, matching: str) -> None:
     help="Display specified database connection details in shared.xml",
 )
 @click.option(
-    "--show-shared-xml-path", is_flag=True, help="Display path to shared.xml file",
+    "--show-shared-xml-path",
+    is_flag=True,
+    help="Display path to shared.xml file",
 )
 def main(
     kettle_path: Path,
@@ -208,7 +221,8 @@ def main(
     connection: str,
     show_shared_xml_path: bool,
 ) -> None:
-    """Utility to quickly view or make changes to the following PDI configuration files:
+    """Utility to quickly view or make changes to the following PDI configuration
+    files:
 
     * kettle.properties
 
@@ -255,9 +269,9 @@ def test_unable_to_locate(capsys):
     test_path = "/foo/bar/kettle.properties"
     result = unable_to_locate(test_path)
     captured = capsys.readouterr()
-    assert result is None
-    assert test_path in captured.out
-    assert captured.out.startswith("UNABLE TO LOCATE")
+    assert result is None  # nosec
+    assert test_path in captured.out  # nosec
+    assert captured.out.startswith("UNABLE TO LOCATE")  # nosec
 
 
 @mark.skip(reason="NOTE: This test will cause kettle.properties to be opened!")
@@ -269,9 +283,9 @@ def test_open_in_editor(capsys):
     with raises(SystemExit):
         result = open_in_editor(test_path)
         captured = capsys.readouterr()
-        assert result is None
-        assert test_path in captured.out
-        assert test_path.startswith("Opening")
+        assert result is None  # nosec
+        assert test_path in captured.out  # nosec
+        assert test_path.startswith("Opening")  # nosec
 
 
 def test_open_in_editor_fails(capsys):
@@ -280,4 +294,4 @@ def test_open_in_editor_fails(capsys):
     with raises(SystemExit):
         open_in_editor(test_path)
         captured = capsys.readouterr()
-        assert captured.out.startswith("UNABLE TO LOCATE")
+        assert captured.out.startswith("UNABLE TO LOCATE")  # nosec
