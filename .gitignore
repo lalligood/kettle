@@ -6,3 +6,4 @@ spoon.sh
 .vscode/
 downloads/
 __pycache__/
+.pytest_cache/
