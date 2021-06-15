@@ -26,6 +26,8 @@ xmltodict = "==0.12.0"
 black = "*"
 flake8 = "*"
 pytest = "*"
+pytest-emoji = "*"
+pytest-sugar = "*"
 
 [requires]
 python_version = "3.9"
