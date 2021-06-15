@@ -47,11 +47,10 @@ def open_in_editor(filename: Path) -> None:
     """Open specified file in default text editor."""
     try:
         if sys.platform == "darwin":
-            os.system(f"open {shlex.quote(str(filename))}")  # nosec
+            os.system(f"open {shlex.quote(str(filename))}")
         else:
-            # open file in Linux editor
-            pass
-        console.print(f"Opening {filename} in your text editor . . .", style=gain_style)
+            os.system(f"xdg-open {shlex.quote(str(filename))}")
+        console.print(f"Opening {filename} in your text editor. . .", style=gain_style)
     except FileNotFoundError:
         unable_to_locate(filename)
     sys.exit()
